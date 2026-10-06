@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+恋爱脑等级测试
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui, -apple-system, sans-serif;}
+body{
+    background: linear-gradient(160deg, #1b082b 0%, #481866 100%);
+    min-height:100vh;
+    padding:24px 18px;
+    color:#fff;
+}
+.container{max-width:600px;margin:0 auto;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* 密码页 */
+.pass-card{
+    background: #2c1044;
+    border:1px solid #c77dff;
+    border-radius:20px;
+    padding:36px 24px;
+    text-align:center;
+    margin-top:120px;
+}
+.pass-card h2{font-size:28px;color:#ffe6f7;margin-bottom:16px;}
+.pass-card p{color:#e9cff0;margin-bottom:24px;}
+#pwdInput{
+    width:100%;
+    padding:14px 16px;
+    border-radius:12px;
+    border:1px solid #c77dff;
+    background:#381852;
+    color:#fff;
+    font-size:20px;
+    text-align:center;
+    outline:none;
+    margin-bottom:16px;
+}
+.err-tip{color:#ff8899;height:22px;margin-bottom:12px;}
+.btn{
+    width:100%;
+    padding:14px;border-radius:99px;border:none;
+    background:linear-gradient(90deg,#ffb8dd,#bb86fc);
+    color:#220b33;font-size:18px;font-weight:bold;
+    cursor:pointer;transition:0.2s;
+}
+.btn:hover{opacity:0.9;}
+
+/* 答题页面 */
+.progress-wrap{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.progress-bar{flex:1;height:8px;background:#381852;border-radius:99px;overflow:hidden;margin-right:12px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#ff88cc,#c77dff);border-radius:99px;transition:0.3s;}
+.title{text-align:center;font-size:28px;font-weight:bold;margin-bottom:16px;color:#ffe6f7;}
+.subtitle{text-align:center;color:#e9cff0;margin-bottom:30px;font-size:16px;}
+.question-card{
+    background: #2c1044;
+    border:1px solid #c77dff;
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:24px;
+    font-size:17px;
+    line-height:1.6;
+}
+.options{display:grid;gap:14px;}
+.opt{
+    background:#381852;
+    border:1px solid #bb86fc;
+    border-radius:14px;
+    padding:16px;
+    cursor:pointer;
+    transition:0.2s;
+}
+.opt:hover{background:#421e60;}
+.opt.selected{
+    background:#502270;
+    border-color:#ffb8dd;
+}
+.btns-row{display:flex;gap:12px;margin-top:28px;}
+.btns-row .btn{flex:1;}
+
+/* 结果页（最终优化：消除雷达图底部大空白） */
+.result-card{
+    background: #2c1044;
+    border:1px solid #c77dff;
+    border-radius:20px;
+    padding:24px 20px 20px;
+    text-align:center;
+}
+.result-title{font-size:34px;font-weight:bold;color:#ffe6f7;margin-bottom:8px;}
+.result-sub{color:#e9cff0;font-size:18px;margin-bottom:12px;}
+
+/* 雷达图终极修复：无底部空白、饱满居中 */
+#radarBox{
+    width:100%;
+    max-width:460px;
+    aspect-ratio:1/0.82;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+#radarBox canvas{
+    width:100%!important;
+    height:100%!important;
+}
+
+.dim-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;}
+.dim-card{
+    background:#381852;
+    border:1px solid #bb86fc;
+    border-radius:14px;
+    padding:14px 10px;
+}
+.dim-card h4{color:#ffd8ee;margin-bottom:6px;}
+.dim-card p{font-size:14px;color:#f0dff7;}
+.desc-text{
+    text-align:left;
+    line-height:1.7;
+    color:#f3e6f9;
+    font-size:16px;
+    padding:10px 4px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <!-- 密码页面 -->
+    <div id="pagePwd" class="page active">
+        <div class="pass-card">
+            <h2>恋爱脑等级测试</h2>
+            <p>请输入访问密码，解锁测试</p>
+            <input type="password" id="pwdInput" placeholder="输入密码">
+            <div class="err-tip" id="pwdErr"></div>
+            <button class="btn" onclick="checkPwd()">确认解锁</button>
+        </div>
+    </div>
+
+    <!-- 首页开始页 -->
+    <div id="pageStart" class="page">
+        <h1 class="title">恋爱脑等级测试</h1>
+        <p class="subtitle">三大维度检测你的恋爱清醒度</p>
+        <div class="question-card">
+            <p>一共10道题，完成后生成你的恋爱脑等级+雷达图。<br>边界感｜滤镜美化｜情绪依附三维评估</p>
+        </div>
+        <button class="btn" onclick="goQuestion(0)">开始测试</button>
+    </div>
+
+    <!-- 答题页面 -->
+    <div id="pageQuiz" class="page">
+        <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+            <span id="progText">0/10</span>
+        </div>
+        <h2 class="title" id="qTitle">第1题</h2>
+        <div class="question-card" id="qText"></div>
+        <div class="options" id="optWrap"></div>
+        <div class="btns-row">
+            <button class="btn" onclick="prevQuestion()" id="btnPrev">上一题</button>
+            <button class="btn" onclick="nextQuestion()" id="btnNext">下一题</button>
+        </div>
+    </div>
+
+    <!-- 结果页面 -->
+    <div id="pageResult" class="page">
+        <div class="result-card">
+            <div class="result-title" id="resGrade"></div>
+            <div class="result-sub" id="resScore"></div>
+            <div id="radarBox">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div class="dim-wrap">
+                <div class="dim-card">
+                    <h4>边界感</h4>
+                    <p id="dim1"></p>
+                </div>
+                <div class="dim-card">
+                    <h4>滤镜美化</h4>
+                    <p id="dim2"></p>
+                </div>
+                <div class="dim-card">
+                    <h4>情绪依附</h4>
+                    <p id="dim3"></p>
+                </div>
+            </div>
+            <div class="desc-text" id="resDesc"></div>
+            <button class="btn" style="margin-top:24px" onclick="restartTest()">重新测试</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== 【终极锁定：10道原题 + 分值 + 维度 + 评语 100% 不变】 ==========
+const questions = [
+    {
+        q:"【场景】前一天晚上，你跟 Crush 在微信上聊了很久，到了半夜 1 点，他说，怎么办，跟你聊天太开心了，明天上课可能会迟到哦。第二天，你就给他点了一杯瑞幸。结果 Crush 的反应是，哎呀，谢谢你，可是我平时都喝 m stand 或者是星巴克的。你的反应是，",
+        opts:[
+            {txt:"A：怎么办，我做的不够好，我是不是配不上他？",v:3},
+            {txt:"B：oh my god， 你吓死我了。秒下头。",v:0},
+            {txt:"C：马上点一杯星巴克，并贴心地附上纸条，知道了，下次我会做得更好。",v:2},
+            {txt:"D：不做任何反应，但心里想，果然他是我想要的男孩，品味真高。",v:1},
+        ]
+    },
+    {
+        q:"【场景】前几天你和crush约会，分开之后你主动发一大段走心感想给他。等了很久，他只回了短短一句话。\n他台词：嗯，早点休息。\n你的反应是：",
+        opts:[
+            {txt:"A：哼，还挺高冷，肯定是在跟我玩欲擒故纵。",v:2},
+            {txt:"B：我可能说太多了，他可能不喜欢话多的女孩。",v:3},
+            {txt:"C：他应该是迷上我了，但是不好意思跟我回那么多，他应该是 i 人吧。",v:1},
+            {txt:"D：等我下次见到他肯定迷死他。",v:0},
+        ]
+    },
+    {
+        q:"【场景】你们吵架冷战两天，他主动来找你，开口就说。\n他台词：你非要这么想，我也没办法。\n你的反应是：",
+        opts:[
+            {txt:"A：好好好，这么经典的回避话术，秒下头，以后不用再聊了，马上拉黑。",v:0},
+            {txt:"B：疯狂复盘自己是哪里做的不对，不断发消息去哄他。",v:3},
+            {txt:"C：他现在情绪不太好等情绪缓和之后我再去找他",v:1},
+            {txt:"D：求闺蜜跟自己一起去求他",v:2},
+        ]
+    },
+    {
+        q:"【场景】你们发生了争吵，目前陷入了冷战，对方已经把你删除拉黑，完全不再理你。你的反应是，",
+        opts:[
+            {txt:"A：既然这样，他也不是那个对的人就此别过。",v:0},
+            {txt:"B：给他送礼物求和。",v:2},
+            {txt:"C：马上冲到他家楼下，让陌生人给他打电话，假装是顺丰快递，引他下来，然后求和。",v:3},
+            {txt:"D：跟闺蜜疯狂吐槽吐槽之后情绪稳定了再去找他",v:1},
+        ]
+    },
+    {
+        q:"【场景】你们约好周末一起吃饭，临近约定时间，他临时通知你。\n他台词：兄弟喊我聚会，你懂事一点，这次先不去了哈。\n你的反应是：",
+        opts:[
+            {txt:"A：没事，你好好玩，我马上也去约姐妹组个局。",v:0},
+            {txt:"B：没关系，玩的开心，结账的时候告诉我，我来帮你出。",v:2},
+            {txt:"C：重情重义的男生最有魅力了，更爱了。",v:3},
+            {txt:"D：好好好，兄弟比我重要，直接分手。",v:1},
+        ]
+    },
+    {
+        q:"【场景】相处一段时间，你想官宣恋情，他跟你说。\n他台词：我喜欢低调，不想把私人感情晒网上。\n你的反应是：",
+        opts:[
+            {txt:"A：我懂，低调也是在保护感情，我会乖乖配合的。",v:3},
+            {txt:"B：不愿意公开就算了，说白了也是在留备选。",v:0},
+            {txt:"C：他不喜欢张扬，真的好沉稳，真的好喜欢。",v:2},
+            {txt:"D：找一个朋友用小号加他进行测试。",v:1},
+        ]
+    },
+    {
+        q:"【场景】你委屈难过掉眼泪，他看着你，有点不耐烦地开口。\n他台词：你又怎么了，能不能别这么矫情？\n你的反应是：",
+        opts:[
+            {txt:"A：哭得更厉害了，眼泪落下来变成珍珠，收起来，给他穿成项链。",v:3},
+            {txt:"B：oh my god，秒下头，直接远离。",v:0},
+            {txt:"C：先冷静，等双方情绪平稳，再沟通这件事。",v:1},
+            {txt:"D：赶紧止住眼泪，向他道歉，是我太敏感给他添麻烦。",v:2},
+        ]
+    },
+    {
+        q:"【场景】你发现crush经常间歇性消失，事后和你解释：最近事情太多，很忙。你的反应是：",
+        opts:[
+            {txt:"A：长期失联是忽视，收回心意，减少投入。",v:0},
+            {txt:"B：他太辛苦了，我体谅他，尽量不去打扰。",v:3},
+            {txt:"C：忙碌可以理解，但约定简单报备的底线。",v:1},
+            {txt:"D：很担心他，不停发消息关心他近况。",v:2},
+        ]
+    },
+    {
+        q:"【场景】偶然发现他和异性聊天暧昧，质问他，他说只是普通朋友。你的反应是：",
+        opts:[
+            {txt:"A：拿我当傻子，立刻止损，不再来往。",v:0},
+            {txt:"B：肯定是对方主动的，crush洁身自好，我调整心态，展现最好的一面。",v:3},
+            {txt:"C：保持警惕，观察后续行为，设立边界。",v:1},
+            {txt:"D：心里难受，但选择相信他说的话。",v:2},
+        ]
+    },
+    {
+        q:"【场景】相处一段时间，他习惯性对你忽冷忽热，热情一阵，冷淡一阵，你会？",
+        opts:[
+            {txt:"A：忽冷忽热是推拉，及时抽离，不再投入。",v:0},
+            {txt:"B：他只是性格慢热，我多付出，慢慢打动他。",v:3},
+            {txt:"C：和他沟通，问清楚，设立相处底线。",v:1},
+            {txt:"D：患得患失，反复琢磨他为什么冷淡。",v:2},
+        ]
+    }
+];
+
+// 维度固定分配
+const dimIndex = {
+    border: [2,3,5,9],
+    filter: [1,6,8],
+    emotion: [0,4,7]
+};
+
+// 4档评语固定不变
+const levelText = [
+    {
+        min:0,max:7,
+        title:"人间清醒选手",
+        sub:"自爱优先型",
+        desc:`你是感情里难得的清醒者，从来不会把爱情当成人生的全部，更不会为了任何人丢掉自己的原则和底线。和crush相处时，你能客观看清对方一言一行，不会自动给对方叠加美化滤镜。一旦察觉到对方敷衍、回避、养鱼或者消耗你的迹象，你不会沉溺自我感动，更不会一遍遍替对方找借口。你明白好的关系一定是双向奔赴，单方面迁就和牺牲毫无意义。你愿意去喜欢一个人，但永远把自己放在第一位，不会因为心动放低姿态，不会为留住谁不断妥协退让。你拥有及时抽身的勇气，就算短暂动心，也不会被情绪裹挟。你懂得爱自己才是终身浪漫的开始，不靠别人的情绪获得安全感，不用别人的偏爱证明自身价值。就算一段关系结束，你也能快速整理好自己，不会长期困在内耗纠结中。清醒不等于冷漠，你依然拥有爱人的能力，只是你的爱意有门槛、有铠甲，只留给同样真诚对待你的人。`
+    },
+    {
+        min:8,max:15,
+        title:"轻度恋爱脑（偶尔上头型）",
+        sub:"",
+        desc:`大部分时候你都保有理智，日常可以冷静判断感情里的是非对错，只是遇到心动的人，很容易短暂上头，一不小心就陷入情绪波动。你分得清什么是底线，只是面对喜欢的crush，会不自觉放宽一部分标准，愿意多给对方一次解释的机会。你不会无底线牺牲自我，但很容易被对方的几句温柔话术打动，短暂忽略那些不对劲的细节。当关系出现矛盾，你会纠结、会犹豫，一边察觉到对方的不妥，一边舍不得放下这段心动。好在你的清醒没有完全消失，一旦对方持续突破你的底线，在闺蜜的提点或是自我复盘之后，你有能力及时止损，不会一直困在糟糕的关系里面。你享受心动带来的甜蜜感，期待被人偏爱，但不会把全部人生寄托在一段感情上。你只是容易被爱意蒙蔽片刻，却不会永远失去分辨好坏的能力。只要保持觉察，守住自己的边界，你完全可以平衡好喜欢和自我，不必因为短暂的上头否定自己。`
+    },
+    {
+        min:16,max:23,
+        title:"中度恋爱脑（容易沦陷型）",
+        sub:"",
+        desc:`一旦动心，你就很容易不自觉美化对方，习惯性主动为crush的所有不合理行为寻找借口。对方冷淡、回避、不愿公开，你第一反应不是察觉危险，而是反思是不是自己做得不够好。在感情里，你习惯优先照顾对方的感受，常常委屈自己去迁就对方，不断降低自己的底线，只为留住这份心动。你很容易沉浸在浪漫幻想里，把对方想象成理想的模样，选择性忽略那些伤害你的细节。关系出现裂痕的时候，你会陷入长时间的自我内耗，反复回想相处片段，不断猜测对方的想法，很难干脆利落抽身离开。你渴望被爱，极度看重情绪陪伴，把对方的态度当成衡量自我价值的标尺。你不是没有察觉不对劲，只是舍不得放下自己投入的情绪与期待。你需要身边靠谱的闺蜜及时点醒你，帮你跳出滤镜。你要记得，真正喜欢你的人，不会一直让你独自猜测、独自难过，一味靠妥协换来的关系，很难长久稳定。`
+    },
+    {
+        min:24,max:30,
+        title:"顶级恋爱脑（为爱献祭型）",
+        sub:"",
+        desc:`当你爱上一个人，很容易开启全方位自我牺牲模式，自带厚厚的滤镜，自动屏蔽对方所有的问题。哪怕对方冷落你、回避官宣、言行矛盾，你也会主动替他开脱，坚信对方本性善良，所有问题都只是暂时的。你习惯把crush放在优先级最高的位置，为了迎合对方不断修改自己的底线，牺牲自己的情绪、时间甚至自尊，享受这种为爱付出的自我感动。你会把对方的一点点善意无限放大，当成支撑自己坚持下去的光，哪怕大部分时间都在独自难过、暗自内耗。你常常在关系里自我怀疑，习惯反思是不是自己不够好，才没能得到对等的偏爱。你很难果断离开消耗你的人，就算身边所有人都提醒你对方不合适，你依旧愿意抱着期待等待对方改变。你极度渴求亲密关系带来的归属感，误以为不断付出就能换来真心。但你要明白，健康的爱情不需要你不断献祭自己，单方面的付出换不来珍惜，先看见自己、善待自己，才有能力接住一份平等的爱意。`
+    }
+];
+
+// 全局变量
+let current = 0;
+let answers = Array(10).fill(null);
+let pwdOk = false;
+const PASSWORD = "6666";
+
+// 页面切换
+function hideAll(){
+    document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));
+}
+function showPage(id){
+    hideAll();
+    document.getElementById(id).classList.add("active");
+}
+
+//密码校验
+function checkPwd(){
+    const val = document.getElementById("pwdInput").value.trim();
+    if(val === PASSWORD){
+        pwdOk = true;
+        showPage("pageStart");
+    }else{
+        document.getElementById("pwdErr").innerText = "密码错误，请重试";
+    }
+}
+
+//渲染题目
+function renderQuestion(){
+    const q = questions[current];
+    document.getElementById("qTitle").innerText = `第${current+1}题`;
+    document.getElementById("qText").innerText = q.q;
+    const wrap = document.getElementById("optWrap");
+    wrap.innerHTML = "";
+    q.opts.forEach((opt,idx)=>{
+        const div = document.createElement("div");
+        div.className = "opt" + (answers[current]===idx?" selected":"");
+        div.innerText = opt.txt;
+        div.onclick = ()=>{
+            answers[current] = idx;
+            renderQuestion();
+        }
+        wrap.appendChild(div);
+    })
+    document.getElementById("progFill").style.width = `${(current+1)/10*100}%`;
+    document.getElementById("progText").innerText = `${current+1}/10`;
+    document.getElementById("btnPrev").style.visibility = current===0 ? "hidden":"visible";
+}
+
+function goQuestion(idx){
+    current = idx;
+    showPage("pageQuiz");
+    renderQuestion();
+}
+function prevQuestion(){
+    if(current>0){
+        current--;
+        renderQuestion();
+    }
+}
+function nextQuestion(){
+    if(answers[current] === null){
+        alert("请先选择一个选项");
+        return;
+    }
+    if(current < 9){
+        current++;
+        renderQuestion();
+    }else{
+        calcResult();
+    }
+}
+
+//计算总分+维度分
+function calcResult(){
+    let total = 0;
+    let borderScore = 0;
+    let filterScore = 0;
+    let emotionScore = 0;
+    for(let i=0;i<10;i++){
+        const optIdx = answers[i];
+        const s = questions[i].opts[optIdx].v;
+        total += s;
+        if(dimIndex.border.includes(i)) borderScore += s;
+        if(dimIndex.filter.includes(i)) filterScore += s;
+        if(dimIndex.emotion.includes(i)) emotionScore += s;
+    }
+    let lv;
+    for(let item of levelText){
+        if(total >= item.min && total <= item.max){
+            lv = item;break;
+        }
+    }
+    document.getElementById("resGrade").innerText = lv.title;
+    document.getElementById("resScore").innerText = `总分：${total}分 ${lv.sub}`;
+    document.getElementById("dim1").innerText = `${borderScore}/12`;
+    document.getElementById("dim2").innerText = `${filterScore}/9`;
+    document.getElementById("dim3").innerText = `${emotionScore}/9`;
+    document.getElementById("resDesc").innerText = lv.desc;
+    showPage("pageResult");
+    drawRadar(borderScore,filterScore,emotionScore);
+}
+
+//【终极修复雷达图：无底部空白、比例完美、网格清晰、不重复叠加】
+function drawRadar(b,f,e){
+    const ctx = document.getElementById("radarChart").getContext("2d");
+    if(window._radarInstance) window._radarInstance.destroy();
+
+    window._radarInstance = new Chart(ctx,{
+        type:"radar",
+        data:{
+            labels:["边界感","滤镜美化","情绪依附"],
+            datasets:[{
+                label:"你的分数",
+                data:[b, f/9*12, e/9*12],
+                backgroundColor:"rgba(255,184,221,0.25)",
+                borderColor:"#ffb8dd",
+                borderWidth:2,
+                pointBackgroundColor:"#bb86fc",
+                pointBorderColor:"#fff",
+                pointBorderWidth:2,
+                pointRadius:4
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:true,
+            plugins:{legend:{display:false}},
+            scales:{
+                r:{
+                    min:0,max:12,
+                    ticks:{display:false},
+                    grid:{color:"rgba(255,255,255,0.18)",circular:false},
+                    angleLines:{color:"rgba(255,255,255,0.18)"},
+                    pointLabels:{
+                        color:"#f3e6f9",
+                        font:{size:14},
+                        padding:12
+                    }
+                }
+            },
+            layout:{
+                padding:{top:0,left:0,right:0,bottom:0}
+            }
+        }
+    });
+}
+
+//重置测试
+function restartTest(){
+    current=0;
+    answers = Array(10).fill(null);
+    showPage("pageStart");
+}
+</script>
+</body>
+</html>
